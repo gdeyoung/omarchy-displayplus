@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "gdeyoung.hyprmoncfg",
-  "name": "hyprmoncfg+ (Vivobook fork)",
+  "name": "Display+",
   "version": "2.3.5",
-  "author": "Greg DeYoung / Carmine Paolino (upstream)",
+  "author": "Greg DeYoung",
   "license": "MIT",
   "description": "Fork: single-pane display control \u2014 brightness, text size, universal scale on the front panel; full hyprmoncfg layout editor underneath.",
   "kinds": [
