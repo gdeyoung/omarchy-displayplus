@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "gdeyoung.hyprmoncfg",
+  "name": "hyprmoncfg+ (Vivobook fork)",
+  "version": "2.3.5",
+  "author": "Greg DeYoung / Carmine Paolino (upstream)",
+  "license": "MIT",
+  "description": "Fork: single-pane display control \u2014 brightness, text size, universal scale on the front panel; full hyprmoncfg layout editor underneath.",
+  "kinds": [
+    "bar-widget",
+    "service"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml",
+    "service": "PreviewGuard.qml"
+  },
+  "barWidget": {
+    "displayName": "Display+",
+    "description": "Multi-monitor layouts that switch themselves on hotplug and lid events.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  },
+  "hyprmoncfg": {
+    "package": "hyprmoncfg",
+    "minimumVersion": "1.18.3",
+    "protocolVersion": 1
+  }
+}
