@@ -58,44 +58,25 @@ test("Preview & save requires a manually entered name and stays disabled while b
   assert.match(root.lastError, /profile name/)
 })
 
-test("the installed backend requirement matches the manifest and upgrade message", () => {
+test("the installed backend requirement matches the manifest and the update screen message", () => {
   const qml = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
   const required = require("../manifest.json").hyprmoncfg.minimumVersion
   assert.equal(qml.match(/Model.versionAtLeast\(versionOutput.text, "([^"]+)"\)/)[1], required)
-  assert.ok(qml.includes("hyprmoncfg " + required + " or newer is still required."))
+  assert.ok(qml.includes("Update hyprmoncfg to use the visual editor."))
   assert.equal(Model.versionAtLeast("hyprmoncfg 1.18.2", required), false)
   assert.equal(Model.versionAtLeast("hyprmoncfg " + required, required), true)
 })
 
-test("installer and TUI launches release panel focus before starting the terminal", () => {
-  const trace = []
-  const deferred = []
-  const root = { installing: true, close() { trace.push("close") } }
-  const process = { startDetached() { trace.push("launch") } }
-  const globals = { Qt: { callLater(fn) { deferred.push(fn) } }, tuiProcess: process }
-  panelFunction("launchTui", root, globals)()
-  assert.deepEqual(trace, ["close"])
-  deferred.shift()()
-  assert.deepEqual(trace, ["close", "launch"])
-
-  trace.length = 0
+test("install and update buttons open the upstream hyprmoncfg instructions, never an in-plugin package install", () => {
   const qml = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
-  const source = qml.match(/id: installPreparationProcess\s+onExited: (function\(exitCode\) \{[\s\S]*?\n    })/)[1]
-  const prepared = vm.runInNewContext("(" + source + ")", { root, Model, ...globals,
-    installerProcess: process,
-    installPoll: { restart() { trace.push("poll") } },
-    installTimeout: { restart() { trace.push("timeout") } }
-  })
-  prepared(0)
-  assert.deepEqual(trace, ["close", "poll", "timeout"])
-  deferred.shift()()
-  assert.equal(trace.at(-1), "launch")
-  trace.length = 0
-  prepared(1)
-  assert.deepEqual(trace, [])
-  assert.equal(deferred.length, 0)
-  assert.equal(root.installing, false)
-  assert.match(root.lastError, /Could not prepare/)
+  assert.match(qml, /onClicked: Qt\.openUrlExternally\("https:\/\/github\.com\/crmne\/hyprmoncfg#install"\)/)
+  assert.match(qml, /Qt\.openUrlExternally\("https:\/\/github\.com\/crmne\/hyprmoncfg#install"\)\n      return/)
+  // The removed supply-chain surface stays removed:
+  assert.doesNotMatch(qml, /root\.install\(\)/)
+  assert.doesNotMatch(qml, /installPreparationProcess|installerProcess|installPoll|installTimeout/)
+  assert.doesNotMatch(qml, /yay|pacman -S|omarchy pkg aur/)
+  assert.equal(typeof Model.installCommand, "undefined")
+  assert.equal(typeof Model.installProcessArgs, "undefined")
 })
 
 test("field resets preserve wire defaults and derive modes from saved geometry", () => {
@@ -230,38 +211,28 @@ test("a failed confirmation remains actionable and shows the backend error", () 
   assert.equal(guard.requests[1].method, "revert")
 })
 
-test("installation and upgrades use a presented AUR flow, restart the daemon, and open a centered TUI", () => {
-  assert.deepEqual(Model.installProcessArgs(), [
-    "omarchy",
-    "launch",
-    "floating",
-    "terminal",
-    "with",
-    "presentation",
-    "rm -f \"$XDG_RUNTIME_DIR/hyprmoncfg-panel-install.failed\" \"$XDG_RUNTIME_DIR/hyprmoncfg-panel-install.complete\"; status=0; if pacman -Q hyprmoncfg-bin >/dev/null 2>&1; then yay -S --needed --cleanafter hyprmoncfg-bin; elif pacman -Q hyprmoncfg >/dev/null 2>&1; then yay -S --needed --cleanafter hyprmoncfg; else omarchy pkg aur add hyprmoncfg-bin; fi && systemctl --user enable hyprmoncfgd.service && systemctl --user restart hyprmoncfgd.service && setsid -f gtk-launch hyprmoncfg-omarchy >/dev/null 2>&1 || status=$?; if (( status == 0 )); then : > \"$XDG_RUNTIME_DIR/hyprmoncfg-panel-install.complete\"; else printf '%s\\n' \"$status\" > \"$XDG_RUNTIME_DIR/hyprmoncfg-panel-install.failed\"; fi; (exit \"$status\")"
-  ])
-  assert.doesNotMatch(Model.installCommand(), /--noconfirm/)
+test("installation is detected without running install-state side files", () => {
+  const qml = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+  assert.doesNotMatch(qml, /hyprmoncfg-panel-install\.failed/)
+  assert.doesNotMatch(qml, /hyprmoncfg-panel-install\.complete/)
+  assert.match(qml, /command -v hyprmoncfg/)
+  assert.doesNotMatch(qml, /property bool installing/)
 })
 
-test("installation completion and failure are observable and cannot leave the panel spinning forever", () => {
+test("the backend probe cannot leave the panel spinning forever", () => {
   const qml = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
-  assert.match(qml, /hyprmoncfg-panel-install\.failed/)
-  assert.match(qml, /hyprmoncfg-panel-install\.complete/)
-  assert.match(qml, /id: installPreparationProcess/)
-  assert.match(qml, /root\.installing && exitCode === 2/)
-  assert.match(qml, /exitCode === 3 && root\.installing/)
-  assert.match(qml, /id: installTimeout/)
-  assert.match(qml, /interval: 300000/)
-  assert.doesNotMatch(Model.installCommand(), /&\s*$/)
+  assert.match(qml, /id: whichProcess/)
+  assert.match(qml, /root\.checkingInstallation = false/)
+  // No polling/timeout timers are needed anymore: the probe is one-shot.
+  assert.doesNotMatch(qml, /id: installTimeout/)
 })
 
 test("background installation probes keep the resolved update screen stable", () => {
   const qml = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
   assert.match(qml, /property bool installationStateKnown: false/)
   assert.match(qml, /if \(!root\.installationStateKnown\) root\.checkingInstallation = true/)
-  assert.match(qml, /if \(exitCode === 3 && root\.installing\) return/)
   assert.match(qml, /root\.installed = probedInstalled/)
-  assert.ok(qml.indexOf("root.installed = probedInstalled") > qml.indexOf("if (root.installing && !probedCompatible)"))
+  assert.ok(qml.indexOf("root.installed = probedInstalled") > qml.indexOf("var probedCompatible"))
 })
 
 test("missing hyprmoncfg gets a focused onboarding screen", () => {

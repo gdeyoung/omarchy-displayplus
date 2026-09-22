@@ -1,18 +1,8 @@
-function installCommand() {
-  return "rm -f \"$XDG_RUNTIME_DIR/hyprmoncfg-panel-install.failed\" \"$XDG_RUNTIME_DIR/hyprmoncfg-panel-install.complete\"; status=0; if pacman -Q hyprmoncfg-bin >/dev/null 2>&1; then yay -S --needed --cleanafter hyprmoncfg-bin; elif pacman -Q hyprmoncfg >/dev/null 2>&1; then yay -S --needed --cleanafter hyprmoncfg; else omarchy pkg aur add hyprmoncfg-bin; fi && systemctl --user enable hyprmoncfgd.service && systemctl --user restart hyprmoncfgd.service && setsid -f gtk-launch hyprmoncfg-omarchy >/dev/null 2>&1 || status=$?; if (( status == 0 )); then : > \"$XDG_RUNTIME_DIR/hyprmoncfg-panel-install.complete\"; else printf '%s\\n' \"$status\" > \"$XDG_RUNTIME_DIR/hyprmoncfg-panel-install.failed\"; fi; (exit \"$status\")"
-}
-
-function installProcessArgs() {
-  return [
-    "omarchy",
-    "launch",
-    "floating",
-    "terminal",
-    "with",
-    "presentation",
-    installCommand()
-  ]
-}
+// The plugin deliberately contains NO in-plugin package installation path:
+// hyprmoncfg is an explicit manual prerequisite (see README / the panel's
+// install instructions link). Installing system packages from a mutable AUR
+// state inside a bar widget is a supply-chain risk the marketplace baseline
+// correctly rejects — the user installs the dependency themselves.
 
 function parseEnvelope(raw) {
   try {
@@ -947,8 +937,6 @@ function versionAtLeast(output, minimum) {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    installCommand: installCommand,
-    installProcessArgs: installProcessArgs,
     parseEnvelope: parseEnvelope,
     canConfirmPreview: canConfirmPreview,
     hiddenDisplays: hiddenDisplays,

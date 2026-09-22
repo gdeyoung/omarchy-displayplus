@@ -21,7 +21,6 @@ Panel {
   property bool compatible: false
   property bool checkingInstallation: true
   property bool installationStateKnown: false
-  property bool installing: false
   property bool serviceEnabled: false
   property bool serviceActive: false
   property bool serviceStateKnown: false
@@ -187,8 +186,6 @@ Panel {
     && !serviceActionPending
   readonly property string runtimeDir: String(Quickshell.env("XDG_RUNTIME_DIR") || "")
   readonly property string socketPath: root.runtimeDir + "/hyprmoncfgd.sock"
-  readonly property string installFailurePath: root.runtimeDir + "/hyprmoncfg-panel-install.failed"
-  readonly property string installCompletePath: root.runtimeDir + "/hyprmoncfg-panel-install.complete"
   readonly property var previewCoordinator: {
     var host = root.bar && root.bar.shell ? root.bar.shell : null
     if (!host) return null
@@ -389,11 +386,7 @@ Panel {
     whichProcess.command = [
       "sh",
       "-c",
-      "if test \"$3\" = \"1\"; then if test -f \"$1\"; then cat \"$1\"; exit 2; elif ! test -f \"$2\"; then exit 3; fi; fi; if command -v hyprmoncfg >/dev/null 2>&1; then hyprmoncfg version; else exit 1; fi",
-      "sh",
-      root.installFailurePath,
-      root.installCompletePath,
-      root.installing ? "1" : "0"
+      "if command -v hyprmoncfg >/dev/null 2>&1; then hyprmoncfg version; else exit 1; fi"
     ]
     whichProcess.running = true
   }
@@ -402,17 +395,6 @@ Panel {
     if (!root.compatible || serviceProcess.running || enabledProcess.running || activeProcess.running) return
     enabledProcess.command = ["systemctl", "--user", "is-enabled", "--quiet", "hyprmoncfgd.service"]
     enabledProcess.running = true
-  }
-
-  function install() {
-    if (root.runtimeDir === "") {
-      root.lastError = "Could not find the user runtime directory."
-      return
-    }
-    root.installing = true
-    root.lastError = ""
-    installPreparationProcess.command = ["rm", "-f", root.installFailurePath, root.installCompletePath]
-    installPreparationProcess.running = true
   }
 
   function setManaged(enabled) {
@@ -1270,7 +1252,7 @@ Panel {
 
   function activateCursor() {
     if (!root.compatible) {
-      root.install()
+      Qt.openUrlExternally("https://github.com/crmne/hyprmoncfg#install")
       return
     }
     if (root.cursorIndex === 0) {
@@ -1335,7 +1317,6 @@ Panel {
       if (connected) {
         root.connectionGrace = false
         root.lastError = ""
-        root.installing = false
         root.subscribe()
       } else {
         root.pendingMethods = ({})
@@ -1356,38 +1337,15 @@ Panel {
     id: whichProcess
     stdout: StdioCollector { id: versionOutput; waitForEnd: true }
     onExited: function(exitCode) {
-      if (exitCode === 3 && root.installing) return
-
       root.checkingInstallation = false
       root.installationStateKnown = true
       var probedInstalled = exitCode === 0
       var probedCompatible = probedInstalled && Model.versionAtLeast(versionOutput.text, "1.18.3")
 
-      if (root.installing && exitCode === 2) {
-        root.installing = false
-        installPoll.stop()
-        installTimeout.stop()
-        root.lastError = String(versionOutput.text || "").trim() === "130"
-          ? "Installation was canceled."
-          : "Installation did not finish. Check the Omarchy terminal and try again."
-        return
-      }
-
-      if (root.installing && !probedCompatible) {
-        root.installing = false
-        installPoll.stop()
-        installTimeout.stop()
-        root.lastError = "The update finished, but hyprmoncfg 1.18.3 or newer is still required."
-        return
-      }
-
       root.installed = probedInstalled
       root.installedVersion = probedInstalled ? String(versionOutput.text || "") : ""
       root.compatible = probedCompatible
       if (root.compatible) {
-        root.installing = false
-        installPoll.stop()
-        installTimeout.stop()
         root.checkServiceState()
       } else {
         backendSocket.connected = false
@@ -1440,26 +1398,6 @@ Panel {
       }
     }
   }
-
-  Process {
-    id: installPreparationProcess
-    onExited: function(exitCode) {
-      if (!root.installing) return
-      if (exitCode !== 0) {
-        root.installing = false
-        root.lastError = "Could not prepare the hyprmoncfg update."
-        return
-      }
-      installerProcess.command = Model.installProcessArgs()
-      // Release the overlay's keyboard focus before presenting a sudo prompt.
-      root.close()
-      Qt.callLater(function() { installerProcess.startDetached() })
-      installPoll.restart()
-      installTimeout.restart()
-    }
-  }
-
-  Process { id: installerProcess }
 
   Process {
     id: serviceProcess
@@ -1547,25 +1485,6 @@ Panel {
         if (completedConnector !== root.brightnessConnector || exitCode !== 0)
           brightnessSelectionTimer.restart()
       }
-    }
-  }
-
-  Timer {
-    id: installPoll
-    interval: 1000
-    repeat: true
-    running: root.installing && !root.compatible
-    onTriggered: root.checkInstallation()
-  }
-
-  Timer {
-    id: installTimeout
-    interval: 300000
-    onTriggered: {
-      if (!root.installing) return
-      root.installing = false
-      installPoll.stop()
-      root.lastError = "Installation is still waiting. Check the Omarchy terminal and try again."
     }
   }
 
@@ -1900,17 +1819,13 @@ Panel {
 
           Button {
             width: parent.width
-            text: root.installing
-              ? (root.installed ? "Updating hyprmoncfg…" : "Installing hyprmoncfg…")
-              : (root.installed ? "Update hyprmoncfg" : "Install hyprmoncfg")
+            text: root.installed ? "Update hyprmoncfg" : "Install hyprmoncfg"
             iconText: root.installed ? "󰚰" : "󰏔"
-            iconSpinning: root.installing
             selected: !root.installed
             bordered: true
-            enabled: !root.installing
             foreground: root.foreground
             fontFamily: root.fontFamily
-            onClicked: root.install()
+            onClicked: Qt.openUrlExternally("https://github.com/crmne/hyprmoncfg#install")
           }
         }
 

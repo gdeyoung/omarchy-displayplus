@@ -36,11 +36,20 @@ Display+ collapses the two into one pane:
 
 ## Install
 
-Requires the upstream hyprmoncfg daemon — it stays the backend and keeps doing
-the profile switching:
+**Prerequisite — install the backend first.** Display+ is a front end: the
+[hyprmoncfg](https://github.com/crmne/hyprmoncfg) daemon stays the backend and
+keeps doing the profile switching. Install it yourself (minimum **1.18.3**),
+reviewing what it installs — Display+ never installs or upgrades packages for
+you:
 
 ```sh
-omarchy pkg aur add hyprmoncfg-bin   # if not already installed
+# upstream instructions: https://github.com/crmne/hyprmoncfg#install
+omarchy pkg aur add hyprmoncfg-bin
+```
+
+Then add the widget:
+
+```sh
 omarchy plugin add https://github.com/gdeyoung/omarchy-displayplus.git --enable
 ```
 
