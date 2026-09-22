@@ -31,6 +31,7 @@ BorderSurface {
   readonly property var bounds: Model.layoutBounds(displays)
   readonly property var metrics: Model.layoutMetrics(bounds, canvas.width, canvas.height, Style.space(8))
   readonly property string hiddenDisplays: Model.hiddenProfileDisplays(profile)
+  readonly property var numberMap: Model.displayNumberMap(displays)
 
   implicitHeight: Style.space(205)
   color: framed ? Qt.rgba(foreground.r, foreground.g, foreground.b, 0.025) : "transparent"
@@ -97,6 +98,9 @@ BorderSurface {
         readonly property bool selected: String(modelData.key || "") === root.selectedKey
         readonly property string workspaceText: Model.workspaceText(root.workspacePlan, modelData.key)
         readonly property bool disconnected: root.markDisconnected && modelData.connected === false
+        // Number + swatch agree with the identify overlay (Model.displayColor).
+        readonly property int displayNumber: root.numberMap[String(modelData.key || "")] || 0
+        readonly property color displayTint: Model.displayColor(displayNumber)
         readonly property int fullDetailHeight: Style.space(workspaceText !== ""
           ? (disconnected ? 110 : 98)
           : (disconnected ? 98 : 86))
@@ -112,9 +116,52 @@ BorderSurface {
           ? Style.selectedFillFor(root.foreground, root.accent)
           : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.045)
         border.width: selected ? Math.max(1, Style.normalBorderWidth) : 1
-        border.color: selected ? root.accent : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.55)
+        border.color: selected
+          ? root.accent
+          : Qt.rgba(displayTint.r, displayTint.g, displayTint.b, 0.55)
 
         Behavior on color { ColorAnimation { duration: 100 } }
+
+        // Rank badge (1 = leftmost): the same number/color flashes on the
+        // physical screen from the Identify button.
+        Rectangle {
+          visible: card.displayNumber > 0
+          width: badgeRow.implicitWidth + Style.space(8)
+          height: Style.space(16)
+          radius: height / 2
+          anchors {
+            top: parent.top
+            left: parent.left
+            margins: Style.space(4)
+          }
+          color: card.displayTint
+
+          Row {
+            id: badgeRow
+            anchors.centerIn: parent
+            spacing: Style.space(3)
+
+            Text {
+              textFormat: Text.PlainText
+              anchors.verticalCenter: parent.verticalCenter
+              text: String(card.displayNumber)
+              color: "#11111b"
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              font.bold: true
+            }
+
+            Text {
+              textFormat: Text.PlainText
+              visible: card.width > Style.space(150)
+              anchors.verticalCenter: parent.verticalCenter
+              text: String(card.modelData.name || "")
+              color: "#11111b"
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+            }
+          }
+        }
 
         Column {
           anchors.centerIn: parent

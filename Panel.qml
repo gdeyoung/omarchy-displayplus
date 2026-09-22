@@ -871,6 +871,21 @@ Panel {
       && typeof root.previewCoordinator[method] === "function"
   }
 
+  // Flash the Windows-style rank overlay on every physical screen. The
+  // windows are owned by the bar widget host (hostWidget.identifyProxy), so
+  // the flash survives closing this panel.
+  property var identifyProxy: null
+
+  function identify() {
+    if (root.identifyProxy && typeof root.identifyProxy.identifyDisplays === "function") {
+      root.identifyProxy.identifyDisplays()
+    } else if (root.hostWidget && typeof root.hostWidget.identifyDisplays === "function") {
+      root.hostWidget.identifyDisplays()
+    } else {
+      root.lastError = "Display identification is unavailable right now."
+    }
+  }
+
   function previewDraft() {
     if (!root.managedChecked) return
     var name = root.draftName()
@@ -1929,12 +1944,14 @@ Panel {
             height: Style.space(250)
             title: "Monitor Layout"
             meta: root.monitorCount + (root.monitorCount === 1 ? " display" : " displays")
+            actionLabel: "Identify"
             active: true
             foreground: root.foreground
             dim: root.dim
             accent: Color.accent
             fontFamily: root.fontFamily
             opacity: root.managedChecked ? 1.0 : root.unmanagedOpacity
+            onActionActivated: root.identify()
 
             DisplayCanvas {
               anchors.fill: parent

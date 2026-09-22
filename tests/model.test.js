@@ -1187,3 +1187,36 @@ test("action rows keep their cursor positions in step with what is on screen", (
   assert.doesNotMatch(qml, /serviceBroken \? 2 : 1/)
   assert.doesNotMatch(qml, /serviceBroken \? 3 : 2/)
 })
+
+test("display ranking numbers leftmost-first and colors stay stable per rank", () => {
+  const displays = [
+    { key: "DP-3", x: 1600, y: 0 },
+    { key: "eDP-1", x: 0, y: 0 },
+    { key: "DP-1", x: 1600, y: 1000 }
+  ]
+  const map = Model.displayNumberMap(displays)
+  assert.equal(map["eDP-1"], 1)
+  assert.equal(map["DP-3"], 2)
+  assert.equal(map["DP-1"], 3)
+
+  assert.equal(Model.displayColor(1), "#89b4fa")
+  assert.equal(Model.displayColor(2), "#a6e3a1")
+  assert.equal(Model.displayColor(9), Model.displayColor(1)) // wraps
+  assert.equal(Model.displayColor(0), Model.displayColor(1)) // clamps
+})
+
+test("the canvas carries rank badges that agree with the identify overlay", () => {
+  const canvas = fs.readFileSync(path.join(__dirname, "..", "DisplayCanvas.qml"), "utf8")
+  assert.match(canvas, /displayNumberMap/)
+  assert.match(canvas, /Model\.displayColor\(displayNumber\)/)
+  // Overlay windows + IPC live in BarWidget (service-owned windows do not
+  // paint on quickshell 0.3.1).
+  const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
+  assert.match(bar, /identifyDisplays/)
+  assert.match(bar, /Model\.displayColor\(rank\)/)
+  assert.match(bar, /WlrLayer\.Overlay/)
+  assert.match(bar, /target: "hyprmoncfg"/)
+  const panel = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+  assert.match(panel, /actionLabel: "Identify"/)
+  assert.match(panel, /identifyProxy\.identifyDisplays/)
+})

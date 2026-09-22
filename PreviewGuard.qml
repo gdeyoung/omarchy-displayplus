@@ -465,4 +465,7 @@ Item {
       }
     }
   }
+
+  // ---- Identify overlay windows live in BarWidget.qml (see note there) -----
 }
+

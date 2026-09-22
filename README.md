@@ -23,6 +23,10 @@ Display+ collapses the two into one pane:
 - **Universal scale** — one click sets the same scale on every connected
   display, then rides hyprmoncfg's confirm-revert dialog so a bad choice
   undoes itself in 10 seconds
+- **Identify** — every monitor card carries a numbered, color-coded badge
+  (leftmost display = 1, matching Windows); the **Identify** button flashes a
+  big numbered overlay on each physical screen so you can see which is which.
+  Also bindable: `qs -p /usr/share/omarchy/shell ipc call hyprmoncfg identify`
 - **Per-monitor scale** stays in the expanded layout editor, where it belongs
 - Everything else hyprmoncfg does — auto profiles on hotplug/lid/resume,
   mirroring, rotation, colour management, workspace planning — unchanged

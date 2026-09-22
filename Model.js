@@ -117,6 +117,41 @@ function displayScaleLayoutLabel(display) {
   return formatScale(scale) + "x = " + logicalWidth + "×" + logicalHeight
 }
 
+// Displays are numbered the Windows way: leftmost column first, then top to
+// bottom. The same ranking drives the canvas badges and the identify overlay,
+// so a number means the same screen on both surfaces.
+function displayNumberMap(displays) {
+  var sources = displays instanceof Array ? displays : []
+  var items = []
+  for (var i = 0; i < sources.length; i++) {
+    var item = sources[i] || {}
+    items.push({
+      key: String(item.key || item.name || ""),
+      x: Number(item.x || 0),
+      y: Number(item.y || 0)
+    })
+  }
+  items.sort(function(left, right) {
+    var dx = left.x - right.x
+    return dx !== 0 ? dx : left.y - right.y
+  })
+  var map = {}
+  for (var j = 0; j < items.length; j++) map[items[j].key] = j + 1
+  return map
+}
+
+// One stable hue per rank: canvas badge, card border, and the full-screen
+// identify flash all use the same swatch for a given number.
+var displayPalette = [
+  "#89b4fa", "#a6e3a1", "#f5c2e7", "#f9e2af",
+  "#94e2d5", "#cba6f7", "#f38ba8", "#fab387"
+]
+
+function displayColor(number) {
+  var n = Math.max(1, Math.round(Number(number) || 1))
+  return displayPalette[(n - 1) % displayPalette.length]
+}
+
 function layoutBounds(displays) {
   var list = displays || []
   if (list.length === 0) return { x: 0, y: 0, width: 1, height: 1 }
@@ -944,6 +979,8 @@ if (typeof module !== "undefined") {
     displayModelLabel: displayModelLabel,
     displayDetailLabel: displayDetailLabel,
     displayScaleLayoutLabel: displayScaleLayoutLabel,
+    displayNumberMap: displayNumberMap,
+    displayColor: displayColor,
     layoutBounds: layoutBounds,
     layoutRect: layoutRect,
     clone: clone,
