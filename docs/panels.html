@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Display+ — synthetic panel mockups</title>
+<style>
+  /* Display+ panel mockups — Omarchy dark shell theme, accent orange.
+     Monitor models, connector names, and profile names are synthetic. */
+  :root {
+    --bg: #0b0d12;
+    --panel: #10131a;
+    --panel2: #161a24;
+    --border: rgba(255,255,255,.09);
+    --ink: #e6e9f0;
+    --muted: #8b93a7;
+    --dim: #5c6478;
+    --accent: #ff9e64;
+    --accent-dim: rgba(255,158,100,.14);
+    --green: #9ece6a;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg);
+    font-family: 'JetBrains Mono', 'JetBrainsMono Nerd Font', ui-monospace, monospace;
+    color: var(--ink);
+    padding: 28px;
+    display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;
+  }
+  .caption { width: 100%; text-align: left; color: var(--dim); font-size: 11px; padding: 4px 2px; }
+
+  .panel {
+    width: 420px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  .phead { display: flex; align-items: center; gap: 10px; padding: 13px 16px 11px; border-bottom: 1px solid var(--border); }
+  .phead .glyph { color: var(--accent); font-size: 15px; width: 20px; text-align: center; }
+  .phead .t { flex: 1; }
+  .phead .t .name { font-size: 13.5px; font-weight: 700; }
+  .phead .t .sub { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+  .expand {
+    font-size: 11px; color: var(--muted); border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 11px;
+  }
+  .body { padding: 14px 16px 16px; }
+  .sec {
+    font-size: 10.5px; color: var(--dim); letter-spacing: .14em;
+    margin: 14px 2px 8px;
+  }
+  .sec:first-child { margin-top: 2px; }
+  .ctrl { margin: 10px 2px 4px; }
+  .ctrl .lab {
+    display: flex; justify-content: space-between; font-size: 11.5px;
+    color: var(--ink); margin-bottom: 7px;
+  }
+  .ctrl .lab .conn { color: var(--dim); }
+  .slider { position: relative; height: 6px; border-radius: 3px; background: rgba(255,255,255,.10); }
+  .slider i {
+    position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px;
+    background: var(--accent); display: block;
+  }
+  .slider .knob {
+    position: absolute; top: -4px; width: 14px; height: 14px; border-radius: 50%;
+    background: #e6e9f0; box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  }
+  .stops { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--dim); margin-top: 6px; }
+  .hint { font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+  .scalebtns { display: flex; gap: 8px; margin-top: 4px; }
+  .sbtn {
+    flex: 1; text-align: center; font-size: 12px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 9px; padding: 8px 0;
+  }
+  .sbtn.on { color: var(--ink); border-color: rgba(255,158,100,.55); background: var(--accent-dim); }
+  .note { font-size: 10.5px; color: var(--muted); margin-top: 8px; }
+
+  /* layout editor canvas */
+  .canvas {
+    position: relative; height: 190px; margin: 10px 2px 6px;
+    background:
+      radial-gradient(340px 200px at 80% 90%, rgba(255,158,100,.07), transparent 70%),
+      repeating-linear-gradient(0deg, transparent 0 21px, rgba(255,255,255,.035) 21px 22px),
+      repeating-linear-gradient(90deg, transparent 0 21px, rgba(255,255,255,.035) 21px 22px),
+      #0d1017;
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .mon {
+    position: absolute; border-radius: 8px;
+    background: linear-gradient(160deg, #171b26, #12151e);
+    border: 1px solid rgba(255,255,255,.14);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 8px 10px;
+  }
+  .mon.sel { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(255,158,100,.35); }
+  .mon .mtop { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--dim); }
+  .mon .mtop .badge {
+    width: 15px; height: 15px; border-radius: 4px; font-size: 9px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; color: #10131a;
+    background: var(--accent);
+  }
+  .mon .mmid { font-size: 10.5px; color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .mon .mmid .model { color: var(--muted); font-weight: 400; font-size: 9.5px; margin-top: 1px; }
+  .mon .mbot { display: flex; gap: 4px; }
+  .mon .mbot span {
+    font-size: 8.5px; color: var(--accent); border: 1px solid rgba(255,158,100,.3);
+    border-radius: 4px; padding: 0.5px 4px;
+  }
+
+  /* profile row */
+  .prow {
+    display: flex; align-items: center; gap: 10px; padding: 10px 10px;
+    border-radius: 10px; margin: 8px 2px;
+  }
+  .prow.cur { background: var(--accent-dim); }
+  .prow .glyph { color: var(--dim); font-size: 14px; width: 18px; text-align: center; }
+  .prow .txt { flex: 1; }
+  .prow .name { font-size: 12.5px; color: var(--ink); }
+  .prow .sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+  .prow .state { font-size: 10px; color: var(--green); }
+
+  /* confirm-revert dialog */
+  .guard {
+    width: 380px; background: var(--panel); border: 1px solid rgba(255,158,100,.4);
+    border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.6); padding: 20px 22px 22px;
+  }
+  .guard .q { font-size: 14px; font-weight: 700; }
+  .guard .desc { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+  .ring { position: relative; width: 92px; height: 92px; margin: 18px auto 6px; }
+  .ring .num {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700; color: var(--ink);
+  }
+  .gbtns { display: flex; gap: 10px; margin-top: 14px; }
+  .gbtn {
+    flex: 1; text-align: center; font-size: 12.5px; border-radius: 9px; padding: 9px 0;
+  }
+  .gbtn.keep { color: #10131a; background: var(--accent); font-weight: 700; }
+  .gbtn.revert { color: var(--muted); border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<!-- ============ PANEL 1: FRONT PAGE ============ -->
+<div>
+<div class="caption">1 · Front page (collapsed)</div>
+<div class="panel" id="panel-front">
+  <div class="phead">
+    <span class="glyph"></span>
+    <div class="t">
+      <div class="name">Display</div>
+      <div class="sub">hyprmoncfg</div>
+    </div>
+    <span class="expand">Expand ›</span>
+  </div>
+  <div class="body">
+    <div class="sec">BRIGHTNESS · DP-1</div>
+    <div class="ctrl">
+      <div class="slider" style="width:100%;"><i style="width:72%;"></i><span class="knob" style="left:calc(72% - 7px);"></span></div>
+      <div class="hint">Selected display · Vega 27" 4K</div>
+    </div>
+
+    <div class="sec">TEXT SIZE</div>
+    <div class="ctrl">
+      <div class="slider"><i style="width:52%;"></i><span class="knob" style="left:calc(52% - 7px);"></span></div>
+      <div class="stops"><span>9</span><span>11</span><span>13</span><span>15</span><span>18</span><span>20</span></div>
+      <div class="hint">Shell, apps, and terminals together</div>
+    </div>
+
+    <div class="sec">UNIVERSAL SCALE · ALL DISPLAYS</div>
+    <div class="scalebtns">
+      <div class="sbtn">1x</div>
+      <div class="sbtn on">1.25x</div>
+      <div class="sbtn">1.5x</div>
+      <div class="sbtn">2x</div>
+    </div>
+    <div class="note">applies to every connected display · confirm-revert guarded</div>
+  </div>
+</div>
+</div>
+
+<!-- ============ PANEL 2: LAYOUT EDITOR ============ -->
+<div>
+<div class="caption">2 · Expanded layout editor</div>
+<div class="panel" id="panel-editor">
+  <div class="phead">
+    <span class="glyph"></span>
+    <div class="t">
+      <div class="name">Display</div>
+      <div class="sub">hyprmoncfg · expanded</div>
+    </div>
+    <span class="expand">Compact ‹</span>
+  </div>
+  <div class="body">
+    <div class="sec">MONITOR LAYOUT · 2 DISPLAYS</div>
+    <div class="canvas">
+      <div class="mon sel" style="left:14px; top:30px; width:236px; height:128px;">
+        <div class="mtop"><span>DP-1</span><span class="badge">1</span></div>
+        <div class="mmid">3840x2160@144Hz<div class="model">Vega 27" 4K · 1.25x</div></div>
+        <div class="mbot"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      </div>
+      <div class="mon" style="left:262px; top:56px; width:128px; height:96px;">
+        <div class="mtop"><span>eDP-1</span><span class="badge">2</span></div>
+        <div class="mmid">1920x1080<div class="model">internal · 1x</div></div>
+        <div class="mbot"><span>5</span><span>6</span></div>
+      </div>
+    </div>
+    <div class="hint">drag to arrange · snap-to-edge · neighbours reflow</div>
+
+    <div class="sec" style="margin-top:14px;">PROFILE</div>
+    <div class="prow cur">
+      <span class="glyph"></span>
+      <div class="txt">
+        <div class="name">Desk, two up</div>
+        <div class="sub">2 displays · best match for this setup</div>
+      </div>
+      <span class="state">● active</span>
+    </div>
+    <div class="prow">
+      <span class="glyph"></span>
+      <div class="txt">
+        <div class="name">Laptop only</div>
+        <div class="sub">1 display · lid-open rules</div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:0 16px 16px;">
+    <div class="note" style="margin:0; text-align:center; color:var(--dim);">switches on hotplug, lid and resume · changes revert unless confirmed</div>
+  </div>
+</div>
+</div>
+
+<!-- ============ PANEL 3: CONFIRM-REVERT GUARD ============ -->
+<div>
+<div class="caption">3 · Universal scale, guarded</div>
+<div class="guard" id="panel-guard">
+  <div class="q">Keep this layout?</div>
+  <div class="desc">Universal scale 1.25x applied to all displays. If anything
+  looks wrong, it reverts by itself.</div>
+  <div class="ring">
+    <svg width="92" height="92" viewBox="0 0 92 92">
+      <circle cx="46" cy="46" r="40" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="7"/>
+      <circle cx="46" cy="46" r="40" fill="none" stroke="#ff9e64" stroke-width="7"
+        stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="62.8"
+        transform="rotate(-90 46 46)"/>
+    </svg>
+    <div class="num">8</div>
+  </div>
+  <div class="gbtns">
+    <div class="gbtn keep">Keep</div>
+    <div class="gbtn revert">Revert now</div>
+    <div class="gbtn revert">Cancel</div>
+  </div>
+</div>
+</div>
+
+<script>
+  // Export mode
+  const params = new URLSearchParams(location.search);
+  const only = params.get('only');
+  if (only) {
+    document.body.style.padding = '0';
+    document.querySelectorAll('.caption').forEach(e => e.remove());
+    document.querySelectorAll('body > div').forEach(w => {
+      if (!w.querySelector('#' + only)) w.remove();
+    });
+    document.body.style.display = 'block';
+  }
+  // Nerd Font glyphs
+  const G = { monitor: "\uF108", active: "\uF00C", inactive: "\uF10C" };
+  document.querySelectorAll('.phead .glyph:empty').forEach((el, i) => el.textContent = G.monitor);
+  document.querySelectorAll('.prow .glyph:empty').forEach((el, i) => el.textContent = i === 0 ? G.active : G.inactive);
+</script>
+</body>
+</html>

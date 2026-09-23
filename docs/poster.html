@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Display+ — marketplace preview</title>
+<style>
+  /* Display+ house style (its own orange), synthetic monitors. */
+  :root {
+    --bg: #0a0c10;
+    --ink: #f2f5fa;
+    --body: #aab3c2;
+    --dim: #67707f;
+    --accent: #ff9e64;
+    --accent-soft: rgba(255,158,100,.13);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 2000px; height: 1125px; overflow: hidden; }
+  body {
+    background:
+      radial-gradient(1100px 700px at 88% 108%, rgba(255,158,100,.15), transparent 60%),
+      radial-gradient(900px 600px at -5% -10%, rgba(255,158,100,.06), transparent 55%),
+      var(--bg);
+    font-family: 'JetBrains Mono', 'JetBrainsMono Nerd Font', ui-monospace, monospace;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    padding: 0 110px;
+  }
+  .left { width: 980px; flex: none; margin-right: 40px; }
+  .crumb { font-size: 21px; color: var(--accent); letter-spacing: .22em; }
+  h1 {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-size: 74px; font-weight: 750; line-height: 1.08;
+    letter-spacing: -0.015em; margin: 30px 0 26px;
+  }
+  .sub { font-size: 24px; color: var(--body); line-height: 1.6; max-width: 880px; }
+  .features {
+    display: grid; grid-template-columns: 1fr 1fr;
+    grid-auto-flow: column; grid-template-rows: repeat(4, auto);
+    gap: 16px 44px; margin-top: 52px; max-width: 920px;
+  }
+  .features div { font-size: 19.5px; color: var(--body); line-height: 1.45; }
+  .features div::before { content: "\25C6  "; color: var(--accent); font-size: 13px; vertical-align: 2px; }
+  .foot {
+    position: absolute; left: 110px; bottom: 58px; right: 910px;
+    border-top: 1px solid rgba(255,255,255,.10); padding-top: 26px;
+    font-size: 19px; color: var(--dim); display: flex; justify-content: space-between;
+  }
+  .right { position: relative; flex: none; width: 760px; height: 100%; }
+  .panelshot {
+    position: absolute; border-radius: 22px;
+    box-shadow: 0 40px 110px rgba(0,0,0,.65), 0 0 0 1px rgba(255,158,100,.32);
+  }
+  /* front 847x633 (0.747), editor 847x1055 (1.246), guard 767x533 (0.695) */
+  #p1 { width: 430px; left: 0;   top: 60px;  z-index: 3; }  /* front page 430x321 */
+  #p2 { width: 480px; left: 270px; top: 300px; z-index: 2; } /* layout editor 480x598 */
+  #p3 { width: 320px; left: 30px;  top: 480px; z-index: 5; } /* confirm-revert 320x222 */
+</style>
+</head>
+<body>
+  <div class="left">
+    <div class="crumb">DISPLAY+ / GDEYOUNG</div>
+    <h1>One panel for every display setting.</h1>
+    <div class="sub">Brightness, text size, and universal scale on the front page —
+    one click from the bar. Underneath, the full hyprmoncfg multi-monitor layout
+    editor: hardware-aware profiles that switch themselves on hotplug, lid, and
+    resume.</div>
+    <div class="features">
+      <div>Brightness, per-display, on page one</div>
+      <div>Profiles switch on hotplug, lid, resume</div>
+      <div>Text size 9–20px across shell and apps</div>
+      <div>Layout editor: drag, snap, reflow</div>
+      <div>Universal scale with confirm-revert</div>
+      <div>Colour depth, HDR, ICC, VRR, mirroring</div>
+      <div>Matches monitors, not connectors</div>
+      <div>Identify displays at a keystroke</div>
+    </div>
+  </div>
+  <div class="right">
+    <img class="panelshot" id="p1" src="/tmp/displayplus_shots/panel-front.png">
+    <img class="panelshot" id="p2" src="/tmp/displayplus_shots/panel-editor.png">
+    <img class="panelshot" id="p3" src="/tmp/displayplus_shots/panel-guard.png">
+  </div>
+  <div class="foot">
+    <span>Every display knob, one panel, zero digging.</span>
+    <span>gdeyoung/omarchy-displayplus</span>
+  </div>
+</body>
+</html>

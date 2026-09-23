@@ -1,10 +1,17 @@
 # Display+ for Omarchy
 
+![Display+ — one panel for every display setting](preview.png)
+
 One panel for every display setting. Brightness, text size, and universal
 scale sit on the front page — one click from the bar — with hyprmoncfg's full
 multi-monitor layout editor underneath.
 
-![Display+ panel](docs/panel.png)
+![Display+ front page](docs/panel-front.png)
+
+Synthetic mockups — no real hardware identifiers. The expanded layout editor and confirm-revert guard:
+
+![Expanded layout editor](docs/panel-editor.png)
+![Universal scale, guarded](docs/panel-guard.png)
 
 ## The problem
 
@@ -34,7 +41,7 @@ Display+ collapses the two into one pane:
 <details>
 <summary>See the expanded editor</summary>
 
-![Expanded monitor layout editor](screenshots/layout.png)
+![Expanded monitor layout editor](docs/panel-editor.png)
 
 </details>
 
