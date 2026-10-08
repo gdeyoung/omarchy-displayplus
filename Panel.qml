@@ -45,6 +45,28 @@ Panel {
   property bool execEditing: false
   property string execDraft: ""
 
+  // Compact dropdown tabs: Display / Layout / Windows. Ready-Room-style —
+  // a segmented row of Buttons switching visibility, not a scrolling stack.
+  property string compactTab: "display"
+  readonly property var compactTabs: [
+    { value: "display", label: "Display" },
+    { value: "layout", label: "Layout" },
+    { value: "windows", label: "Windows" }
+  ]
+
+  // Window mode (docked ultrawide behaviour) — needs the ultrawide-mode
+  // helper; degrades to a hint when absent (other users' machines).
+  property bool windowModeKnown: false
+  property bool windowModeAvailable: false
+  property string windowMode: "off"   // float | tile | off
+  property string windowModePending: ""
+  property string profileWindowModePending: ""
+  readonly property var windowModeChoices: [
+    { value: "float", label: "Floating", hint: "Every window floats — free placement" },
+    { value: "tile", label: "Tiled + 1:1", hint: "Dwindle tiles, single windows capped square" },
+    { value: "off", label: "Default", hint: "Plain dwindle tiling" }
+  ]
+
   property var editorDocument: ({
     profile: { outputs: [], workspaces: {} },
     profiles: [],
@@ -327,6 +349,52 @@ Panel {
     if (root.bar && typeof root.bar.switchPanelFrom === "function")
       return root.bar.switchPanelFrom(root.barIdentity, direction)
     return false
+  }
+
+  // ---- window mode (ultrawide-mode helper) ----
+
+  function refreshWindowMode() {
+    if (!root.opened || windowModeProbe.running) return
+    windowModeProbe.command = [
+      "sh", "-c",
+      "if command -v ultrawide-mode >/dev/null 2>&1; then ultrawide-mode status; else exit 127; fi"
+    ]
+    windowModeProbe.running = true
+  }
+
+  function setWindowMode(value) {
+    if (!root.windowModeAvailable || root.windowModePending !== "") return
+    var choice = ["float", "tile", "off"].indexOf(value) < 0 ? "off" : value
+    root.windowModePending = choice
+    windowModeSet.command = ["ultrawide-mode", choice]
+    windowModeSet.running = true
+  }
+
+  // Per-profile default: writes "ultrawide-mode <mode>" into the profile's
+  // exec field (the daemon runs exec when it applies the profile), unless
+  // the exec already carries other commands — then we leave it alone.
+  function profileWindowMode(profile) {
+    var exec = String((profile || {}).exec || "")
+    var match = exec.match(/ultrawide-mode\s+(float|tile|off)/)
+    return match ? match[1] : ""
+  }
+
+  function setProfileWindowMode(profile, value) {
+    if (!profile || root.profileWindowModePending !== "") return
+    var choice = ["float", "tile", "off"].indexOf(value) < 0 ? "" : value
+    var exec = String(profile.exec || "")
+    var stamped = "ultrawide-mode " + choice
+    var updated = exec.match(/ultrawide-mode\s+(float|tile|off)/)
+      ? exec.replace(/ultrawide-mode\s+(float|tile|off)/, stamped)
+      : (exec.trim() === "" ? stamped : "")  // non-empty foreign exec: refuse
+    if (updated === "") {
+      root.lastError = "Profile has a custom exec command — edit it in Profiles"
+      return
+    }
+    root.profileWindowModePending = String(profile.name || "")
+    var clone = Model.clone(profile)
+    clone.exec = updated
+    root.send("save", { profile: clone }, { kind: "exec", name: clone.name })
   }
 
   function refreshBrightness() {
@@ -1266,6 +1334,7 @@ Panel {
   }
 
   function activateCursor() {
+    if (root.compactTab !== "layout") return
     if (!root.compatible) {
       Qt.openUrlExternally("https://github.com/crmne/hyprmoncfg#install")
       return
@@ -1314,6 +1383,7 @@ Panel {
       root.checkInstallation()
       if (root.compatible) root.checkServiceState()
       if (root.backendConnected) root.requestEditorState()
+      root.refreshWindowMode()
       brightnessSelectionTimer.restart()
     } else {
       brightnessSetDebounce.stop()
@@ -1365,6 +1435,33 @@ Panel {
       } else {
         backendSocket.connected = false
         root.serviceStateKnown = false
+      }
+    }
+  }
+
+  Process {
+    id: windowModeProbe
+    stdout: StdioCollector { id: windowModeOutput; waitForEnd: true }
+    onExited: function(exitCode) {
+      root.windowModeKnown = true
+      root.windowModeAvailable = exitCode !== 127
+      if (root.windowModeAvailable) {
+        var status = String(windowModeOutput.text || "").trim()
+        root.windowMode = ["float", "tile", "off"].indexOf(status) >= 0 ? status : "off"
+      }
+    }
+  }
+
+  Process {
+    id: windowModeSet
+    onExited: function(exitCode) {
+      if (exitCode === 0) {
+        root.windowMode = root.windowModePending
+        root.windowModePending = ""
+      } else {
+        root.windowModePending = ""
+        root.lastError = "ultrawide-mode failed (exit " + exitCode + ")"
+        root.refreshWindowMode()
       }
     }
   }
@@ -1849,10 +1946,29 @@ Panel {
           width: parent.width
           spacing: Style.space(14)
 
-          PanelSeparator { foreground: root.foreground }
+          Row {
+            width: parent.width
+            spacing: Style.space(2)
+
+            Repeater {
+              model: root.compactTabs
+
+              Button {
+                required property var modelData
+                text: String(modelData.label || "")
+                selected: String(modelData.value || "") === root.compactTab
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                fontSize: Style.font.caption
+                horizontalPadding: Style.space(8)
+                verticalPadding: Style.space(4)
+                onClicked: root.compactTab = String(modelData.value || "display")
+              }
+            }
+          }
 
           BrightnessControl {
-            visible: root.brightnessConnector !== ""
+            visible: root.compactTab === "display" && root.brightnessConnector !== ""
             width: parent.width
             bar: root.bar
             connector: root.brightnessConnector
@@ -1872,6 +1988,7 @@ Panel {
           }
 
           TextSizeControl {
+            visible: root.compactTab === "display"
             width: parent.width
             bar: root.bar
             foreground: root.foreground
@@ -1881,6 +1998,7 @@ Panel {
           }
 
           UniversalScaleControl {
+            visible: root.compactTab === "display"
             width: parent.width
             bar: root.bar
             profile: root.draftProfile
@@ -1894,6 +2012,7 @@ Panel {
           }
 
           Column {
+            visible: root.compactTab === "layout"
             width: parent.width
             spacing: Style.space(6)
 
@@ -1925,6 +2044,7 @@ Panel {
           }
 
           Repeater {
+            visible: root.compactTab === "layout"
             model: root.actionRows
 
             ActionRow {
@@ -1940,6 +2060,7 @@ Panel {
           }
 
           EditorPane {
+            visible: root.compactTab === "layout"
             width: parent.width
             height: Style.space(250)
             title: "Monitor Layout"
@@ -1977,7 +2098,7 @@ Panel {
           }
 
           BorderSurface {
-            visible: root.draftDirty || root.previewTransaction !== ""
+            visible: root.compactTab === "layout" && (root.draftDirty || root.previewTransaction !== "")
             width: parent.width
             implicitHeight: compactDraftActions.implicitHeight + Style.space(16)
             color: Style.selectedFillFor(root.foreground, Color.accent)
@@ -2065,9 +2186,10 @@ Panel {
             }
           }
 
-          PanelSeparator { foreground: root.foreground }
+          PanelSeparator { visible: root.compactTab === "layout"; foreground: root.foreground }
 
           Column {
+            visible: root.compactTab === "layout"
             width: parent.width
             spacing: Style.space(6)
             opacity: root.managedChecked ? 1.0 : root.unmanagedOpacity
@@ -2147,6 +2269,150 @@ Panel {
               foreground: root.foreground
               fontFamily: root.fontFamily
               onClicked: root.beginCreateProfile()
+            }
+          }
+
+          Column {
+            visible: root.compactTab === "windows"
+            width: parent.width
+            spacing: Style.space(10)
+
+            PanelSectionHeader {
+              text: "WINDOW MODE"
+              foreground: root.foreground
+              fontFamily: root.fontFamily
+            }
+
+            Text {
+              textFormat: Text.PlainText
+              visible: root.windowModeKnown && !root.windowModeAvailable
+              width: parent.width
+              text: "Install ultrawide-mode (~/.local/bin) to switch window modes here."
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              wrapMode: Text.WordWrap
+            }
+
+            Column {
+              visible: root.windowModeAvailable
+              width: parent.width
+              spacing: Style.space(6)
+
+              Row {
+                width: parent.width
+                spacing: Style.space(4)
+
+                Repeater {
+                  model: root.windowModeChoices
+
+                  Button {
+                    required property var modelData
+                    width: (parent.width - parent.spacing * 2) / 3
+                    text: String(modelData.label || "")
+                    selected: root.windowMode === String(modelData.value || "")
+                      || root.windowModePending === String(modelData.value || "")
+                    bordered: true
+                    enabled: root.windowModePending === ""
+                    foreground: root.foreground
+                    fontFamily: root.fontFamily
+                    fontSize: Style.font.caption
+                    horizontalPadding: Style.space(4)
+                    verticalPadding: Style.space(6)
+                    onClicked: root.setWindowMode(String(modelData.value || "off"))
+                  }
+                }
+              }
+
+              Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                text: {
+                  var pending = root.windowModePending !== ""
+                    ? root.windowModePending : root.windowMode
+                  for (var i = 0; i < root.windowModeChoices.length; i++) {
+                    if (root.windowModeChoices[i].value === pending)
+                      return root.windowModeChoices[i].hint
+                  }
+                  return ""
+                }
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                wrapMode: Text.WordWrap
+              }
+            }
+
+            PanelSeparator { visible: root.savedProfiles.length > 0; foreground: root.foreground }
+
+            Column {
+              visible: root.savedProfiles.length > 0 && root.windowModeAvailable
+              width: parent.width
+              spacing: Style.space(6)
+
+              PanelSectionHeader {
+                text: "WHEN A PROFILE APPLIES"
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+              }
+
+              Repeater {
+                model: root.savedProfiles
+
+                Column {
+                  required property var modelData
+                  width: parent.width
+                  spacing: Style.space(3)
+
+                  Text {
+                    textFormat: Text.PlainText
+                    text: String(modelData.name || "")
+                    color: root.foreground
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.bodySmall
+                    font.bold: true
+                    elide: Text.ElideRight
+                  }
+
+                  Row {
+                    width: parent.width
+                    spacing: Style.space(3)
+
+                    Repeater {
+                      model: root.windowModeChoices
+
+                      Button {
+                        id: profileModeButton
+                        required property var modelData
+                        readonly property var profile: parent.parent.modelData
+                        width: (parent.width - parent.spacing * 2) / 3
+                        text: String(modelData.label || "")
+                        selected: root.profileWindowMode(profile) === String(modelData.value || "")
+                        bordered: true
+                        enabled: root.profileWindowModePending === ""
+                          && root.managedChecked && root.previewTransaction === ""
+                        foreground: root.foreground
+                        fontFamily: root.fontFamily
+                        fontSize: Style.font.caption
+                        horizontalPadding: Style.space(2)
+                        verticalPadding: Style.space(4)
+                        onClicked: root.setProfileWindowMode(
+                          profile, String(modelData.value || "off"))
+                      }
+                    }
+                  }
+                }
+              }
+
+              Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                text: "Runs when the daemon applies the profile (dock, undock, lid). Super+U flips the live mode any time."
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                wrapMode: Text.WordWrap
+              }
             }
           }
         }

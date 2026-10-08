@@ -868,7 +868,7 @@ test("the compact profile is stable status with contextual actions, not a select
 
 test("the compact change row becomes the one preview confirmation row", () => {
   const qml = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
-  assert.match(qml, /visible: root\.draftDirty \|\| root\.previewTransaction !== ""/)
+  assert.match(qml, /visible: root\.compactTab === "layout" && \(root\.draftDirty \|\| root\.previewTransaction !== ""\)/)
   assert.match(qml, /root\.previewKind === "profile" \? "Keep this profile\?" : "Keep this layout\?"/)
   assert.match(qml, /root\.previewTransaction !== "" \? "Revert" : "Discard"/)
   assert.match(qml, /if \(root\.previewTransaction !== ""\) root\.keepPreview\(\)/)
@@ -880,6 +880,24 @@ test("the compact change row becomes the one preview confirmation row", () => {
   assert.match(qml, /pending\.profile && pending\.profile\.outputs instanceof Array/)
   assert.match(qml, /root\.draftProfile = Model\.clone\(pending\.profile\)/)
   assert.match(qml, /root\.pendingProfileName !== ""/)
+})
+
+test("compact dropdown is tabbed: Display / Layout / Windows", () => {
+  const qml = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+  assert.match(qml, /property string compactTab: "display"/)
+  assert.match(qml, /\{ value: "display", label: "Display" \}/)
+  assert.match(qml, /\{ value: "layout", label: "Layout" \}/)
+  assert.match(qml, /\{ value: "windows", label: "Windows" \}/)
+  // display tab owns the quick controls
+  assert.match(qml, /visible: root\.compactTab === "display" && root\.brightnessConnector !== ""/)
+  assert.match(qml, /visible: root\.compactTab === "display"\n            width: parent\.width\n            bar: root\.bar\n            foreground: root\.foreground\n            dim: root\.dim/)
+  // windows tab owns the mode switcher and per-profile defaults
+  assert.match(qml, /text: "WINDOW MODE"/)
+  assert.match(qml, /root\.setWindowMode\(String\(modelData\.value \|\| "off"\)\)/)
+  assert.match(qml, /ultrawide-mode\\s\+\(float\|tile\|off\)/)
+  assert.match(qml, /root\.refreshWindowMode\(\)/)
+  // keyboard cursor only drives the layout tab rows
+  assert.match(qml, /if \(root\.compactTab !== "layout"\) return/)
 })
 
 test("display previews keep a shell-level confirmation across monitor rebuilds", () => {
