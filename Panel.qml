@@ -370,18 +370,21 @@ Panel {
     windowModeSet.running = true
   }
 
-  // Per-profile default: writes "ultrawide-mode <mode>" into the profile's
-  // exec field (the daemon runs exec when it applies the profile), unless
-  // the exec already carries other commands — then we leave it alone.
+  // Per-profile window mode: first-class field (survives daemon saves),
+  // with the exec stamp as the runnable carrier + fallback for profiles
+  // written before the field existed.
   function profileWindowMode(profile) {
-    var exec = String((profile || {}).exec || "")
-    var match = exec.match(/ultrawide-mode\s+(float|tile|off)/)
+    var p = profile || {}
+    var field = String(p.window_mode || "")
+    if (["float", "tile", "off"].indexOf(field) >= 0) return field
+    var match = String(p.exec || "").match(/ultrawide-mode\s+(float|tile|off)/)
     return match ? match[1] : ""
   }
 
   function setProfileWindowMode(profile, value) {
     if (!profile || root.profileWindowModePending !== "") return
     var choice = ["float", "tile", "off"].indexOf(value) < 0 ? "" : value
+    if (choice === "") return
     var exec = String(profile.exec || "")
     var stamped = "ultrawide-mode " + choice
     var updated = exec.match(/ultrawide-mode\s+(float|tile|off)/)
@@ -394,6 +397,7 @@ Panel {
     root.profileWindowModePending = String(profile.name || "")
     var clone = Model.clone(profile)
     clone.exec = updated
+    clone.window_mode = choice   // readable field; daemon preserves unknown keys
     root.send("save", { profile: clone }, { kind: "exec", name: clone.name })
   }
 
@@ -1967,6 +1971,90 @@ Panel {
             }
           }
 
+          Column {
+            visible: root.compactTab === "display" && root.savedProfiles.length > 0
+            width: parent.width
+            spacing: Style.space(6)
+            opacity: root.managedChecked ? 1.0 : root.unmanagedOpacity
+
+            PanelSectionHeader {
+              text: "PROFILE"
+              foreground: root.foreground
+              fontFamily: root.fontFamily
+            }
+
+            Row {
+              width: parent.width
+              height: compactProfilePicker.implicitHeight
+              spacing: Style.space(8)
+
+              PanelDropdown {
+                id: compactProfilePicker
+                width: parent.width - compactApplyProfile.width - parent.spacing
+                label: ""
+                showLabel: false
+                popupParent: root
+                value: root.profileChoice !== "" ? root.profileChoice
+                  : (root.activeProfile !== "" ? root.activeProfile : "")
+                options: {
+                  var opts = []
+                  for (var i = 0; i < root.savedProfiles.length; i++)
+                    opts.push(String(root.savedProfiles[i].name || ""))
+                  return opts
+                }
+                foreground: root.foreground
+                background: Color.popups.background
+                popupBorder: Color.popups.border
+                accent: Color.accent
+                fontFamily: root.fontFamily
+                onChanged: function(value) {
+                  if (root.profileAutomatic) {
+                    root.setProfileAutomatic(false)
+                  }
+                  root.profileChoice = value
+                }
+              }
+
+              Button {
+                id: compactApplyProfile
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Apply"
+                selected: true
+                bordered: true
+                enabled: root.managedChecked && root.profileChoice !== ""
+                  && root.profileChoice !== root.activeProfile
+                  && root.previewTransaction === "" && !root.previewPending
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                fontSize: Style.font.caption
+                onClicked: root.previewProfile(root.profileChoice)
+              }
+            }
+
+            Text {
+              textFormat: Text.PlainText
+              visible: root.profileAutomatic
+              width: parent.width
+              text: "Automatic — best profile for the connected displays"
+              color: root.dim
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              elide: Text.ElideRight
+            }
+
+            Button {
+              width: parent.width
+              visible: !root.profileAutomatic
+              text: root.profileModePending ? "Resuming automatic matching…" : "Resume automatic matching"
+              bordered: true
+              enabled: root.managedChecked && !root.profileModePending
+                && root.previewTransaction === "" && !root.previewPending
+              foreground: root.foreground
+              fontFamily: root.fontFamily
+              onClicked: root.setProfileAutomatic(true)
+            }
+          }
+
           BrightnessControl {
             visible: root.compactTab === "display" && root.brightnessConnector !== ""
             width: parent.width
@@ -2193,69 +2281,6 @@ Panel {
             width: parent.width
             spacing: Style.space(6)
             opacity: root.managedChecked ? 1.0 : root.unmanagedOpacity
-
-            PanelSectionHeader {
-              text: "PROFILE"
-              foreground: root.foreground
-              fontFamily: root.fontFamily
-            }
-
-            Row {
-              id: compactProfileStatus
-              width: parent.width
-              height: compactProfileText.implicitHeight + Style.space(8)
-              spacing: Style.space(12)
-
-              Text {
-                textFormat: Text.PlainText
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.monitorCount > 1 ? "󰍺" : "󰍹"
-                color: root.foreground
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.icon
-              }
-
-              Column {
-                id: compactProfileText
-                width: parent.width - parent.children[0].width - parent.spacing
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Style.space(1)
-
-                Text {
-                  textFormat: Text.PlainText
-                  width: parent.width
-                  text: root.profileStatusTitle
-                  color: root.foreground
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.body
-                  font.bold: true
-                  elide: Text.ElideRight
-                }
-
-                Text {
-                  textFormat: Text.PlainText
-                  width: parent.width
-                  text: root.profileStatusSubtitle
-                  color: root.dim
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.bodySmall
-                  elide: Text.ElideRight
-                }
-              }
-            }
-
-            Button {
-              width: parent.width
-              visible: !root.profileAutomatic
-              text: root.profileModePending ? "Resuming automatic matching…" : "Resume automatic matching"
-              selected: true
-              bordered: true
-              enabled: root.managedChecked && !root.profileModePending
-                && root.previewTransaction === "" && !root.previewPending
-              foreground: root.foreground
-              fontFamily: root.fontFamily
-              onClicked: root.setProfileAutomatic(true)
-            }
 
             Button {
               width: parent.width

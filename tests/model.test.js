@@ -851,18 +851,18 @@ test("the workspace form hides irrelevant group size and adapts keyboard navigat
   assert.doesNotMatch(qml, /root\.workspaceKeyboardIndex === 4 \+ index/)
 })
 
-test("the compact profile is stable status with contextual actions, not a selector", () => {
+test("the Display tab leads with the profile picker and automatic mode", () => {
   const qml = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
   assert.match(qml, /text: "PROFILE"/)
-  assert.match(qml, /id: compactProfileStatus/)
-  assert.match(qml, /text: root\.profileStatusTitle/)
-  assert.match(qml, /text: root\.profileStatusSubtitle/)
-  assert.match(qml, /text: root\.profileModePending \? "Resuming automatic matching…" : "Resume automatic matching"/)
+  assert.match(qml, /id: compactProfilePicker/)
+  assert.match(qml, /onClicked: root\.previewProfile\(root\.profileChoice\)/)
+  assert.match(qml, /visible: root\.compactTab === "display" && root\.savedProfiles\.length > 0/)
+  assert.match(qml, /text: "Automatic — best profile for the connected displays"/)
   assert.match(qml, /text: "Create profile"/)
   assert.match(qml, /root\.beginCreateProfile\(\)/)
+  assert.doesNotMatch(qml, /id: compactProfileStatus/)
   assert.doesNotMatch(qml, /compactProfilesOpen/)
   assert.doesNotMatch(qml, /id: compactProfileSelector/)
-  assert.doesNotMatch(qml, /model: Model\.profileOptions\(root\.document\)/)
   assert.doesNotMatch(qml, /Open full display editor/)
 })
 
