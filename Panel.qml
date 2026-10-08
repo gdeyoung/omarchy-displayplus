@@ -1990,7 +1990,7 @@ Panel {
 
               PanelDropdown {
                 id: compactProfilePicker
-                width: parent.width - compactApplyProfile.width - parent.spacing
+                width: parent.width - compactApplyProfile.width - compactNewProfile.width - parent.spacing * 2
                 label: ""
                 showLabel: false
                 popupParent: root
@@ -2028,6 +2028,20 @@ Panel {
                 fontFamily: root.fontFamily
                 fontSize: Style.font.caption
                 onClicked: root.previewProfile(root.profileChoice)
+              }
+
+              Button {
+                id: compactNewProfile
+                anchors.verticalCenter: parent.verticalCenter
+                text: "New"
+                iconText: "󰐗"
+                bordered: true
+                enabled: root.managedChecked && root.editorReady
+                  && root.previewTransaction === "" && !root.previewPending
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                fontSize: Style.font.caption
+                onClicked: root.beginCreateProfile()
               }
             }
 
