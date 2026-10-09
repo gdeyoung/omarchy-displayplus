@@ -1362,6 +1362,11 @@ Panel {
   }
 
   Component.onCompleted: root.checkInstallation()
+  onCompactTabChanged: {
+    // Profiles can change outside the panel (CLI, daemon); refresh the
+    // picker's source whenever the Display tab (which hosts it) is shown.
+    if (root.compactTab === "display" && root.backendConnected) root.requestEditorState()
+  }
   onActivePageChanged: {
     if (root.activePage === "workspaces")
       Qt.callLater(function() { root.ensureManualWorkspaceRules() })
