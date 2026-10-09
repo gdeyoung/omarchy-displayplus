@@ -79,6 +79,7 @@ Panel {
   property var workspacePlan: []
   property bool editorReady: false
   property bool editorLoading: false
+  property real editorLoadingSince: 0
   property bool editPending: false
   property bool draftDirty: false
   property string sourceProfile: ""
@@ -530,7 +531,18 @@ Panel {
   function subscribe() { root.send("subscribe", {}) }
 
   function requestEditorState() {
-    if (!root.backendConnected || root.editorLoading || root.previewTransaction !== "") return
+    if (!root.backendConnected) return
+    // editorLoading guards against concurrent requests, but a response lost
+    // to a socket hiccup would strand it true and silently block every
+    // future refresh — the "stale profile list" bug. Clear it on each open
+    // of the panel instead of trusting it forever.
+    if (root.editorLoading) {
+      if (!root.editorLoadingSince || Date.now() - root.editorLoadingSince > 3000) {
+        root.editorLoading = false
+      }
+    }
+    if (root.editorLoading || root.previewTransaction !== "") return
+    root.editorLoadingSince = Date.now()
     root.editorLoading = true
     root.send("editor_state", {})
   }
@@ -539,8 +551,13 @@ Panel {
     if (!Model.validEditorDocument(value)) {
       root.editorLoading = false
       root.lastError = "hyprmoncfg returned an invalid editor state."
+      console.log("[display+] invalid editor document rejected")
       return
     }
+    var names = []
+    for (var i = 0; i < (value.profiles || []).length; i++)
+      names.push(String(value.profiles[i].name || ""))
+    console.log("[display+] editor_state received, profiles: " + names.join(", "))
     root.editorDocument = value
     root.draftProfile = Model.clone(value.profile)
     root.workspacePlan = value.workspace_plan instanceof Array ? value.workspace_plan : []
