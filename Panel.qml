@@ -352,6 +352,31 @@ Panel {
     return false
   }
 
+  // ---- ultrawide bar width (gdeyoung.ultrawide-bar, opt-in) ----
+
+  readonly property string activeBarId: root.bar && root.bar.shell
+    && root.bar.shell.activeBarId !== undefined
+      ? String(root.bar.shell.activeBarId) : ""
+  readonly property bool ultrawideBarActive: root.activeBarId === "gdeyoung.ultrawide-bar"
+  property int barWidthPercent: 100
+  property bool barWidthPending: false
+
+  function refreshBarWidth() {
+    if (!root.opened || barWidthProbe.running) return
+    barWidthProbe.command = ["sh", "-c",
+      "jq -r '.bar.widthPercent // 100' \"$HOME/.config/omarchy/shell.json\" 2>/dev/null || echo 100"]
+    barWidthProbe.running = true
+  }
+
+  function setBarWidth(value) {
+    if (root.barWidthPending) return
+    var pct = Math.round(Number(value))
+    if (!isFinite(pct) || pct < 50 || pct > 100) pct = 100
+    root.barWidthPending = true
+    barWidthSet.command = ["ultrawide-bar-width", String(pct)]
+    barWidthSet.running = true
+  }
+
   // ---- window mode (ultrawide-mode helper) ----
 
   function refreshWindowMode() {
@@ -1410,6 +1435,7 @@ Panel {
       if (root.compatible) root.checkServiceState()
       if (root.backendConnected) root.requestEditorState()
       root.refreshWindowMode()
+      root.refreshBarWidth()
       brightnessSelectionTimer.restart()
     } else {
       brightnessSetDebounce.stop()
@@ -1474,6 +1500,26 @@ Panel {
       if (root.windowModeAvailable) {
         var status = String(windowModeOutput.text || "").trim()
         root.windowMode = ["float", "tile", "off"].indexOf(status) >= 0 ? status : "off"
+      }
+    }
+  }
+
+  Process {
+    id: barWidthProbe
+    stdout: StdioCollector { id: barWidthOutput; waitForEnd: true }
+    onExited: function(exitCode) {
+      var pct = Math.round(Number(String(barWidthOutput.text || "").trim()))
+      root.barWidthPercent = isFinite(pct) && pct >= 50 && pct <= 100 ? pct : 100
+    }
+  }
+
+  Process {
+    id: barWidthSet
+    onExited: function(exitCode) {
+      root.barWidthPending = false
+      if (exitCode !== 0) {
+        root.lastError = "ultrawide-bar-width failed (exit " + exitCode + ")"
+        root.refreshBarWidth()
       }
     }
   }
@@ -2397,6 +2443,46 @@ Panel {
                   }
                   return ""
                 }
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                wrapMode: Text.WordWrap
+              }
+            }
+
+            Column {
+              visible: root.ultrawideBarActive
+              width: parent.width
+              spacing: Style.space(6)
+
+              PanelSeparator { foreground: root.foreground }
+
+              PanelSectionHeader {
+                text: "BAR WIDTH"
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+              }
+
+              PanelSlider {
+                id: barWidthSlider
+                width: parent.width
+                bar: root.bar
+                minimum: 50
+                maximum: 100
+                step: 5
+                integer: true
+                value: root.barWidthPercent
+                onReleased: function(next) { root.setBarWidth(Math.round(next)) }
+              }
+
+              Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                text: root.barWidthPending
+                  ? "Applying…"
+                  : (root.barWidthPercent < 100
+                    ? root.barWidthPercent + "% of screen, centered on the midpoint"
+                    : "Full width")
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
