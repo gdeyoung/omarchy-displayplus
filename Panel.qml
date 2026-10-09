@@ -2015,7 +2015,7 @@ Panel {
                 width: parent.width - compactApplyProfile.width - compactNewProfile.width - parent.spacing * 2
                 label: ""
                 showLabel: false
-                popupParent: root
+                popupParent: keyCatcher
                 value: root.profileChoice !== "" ? root.profileChoice
                   : (root.activeProfile !== "" ? root.activeProfile : "")
                 options: {
