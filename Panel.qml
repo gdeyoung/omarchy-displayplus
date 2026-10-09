@@ -368,12 +368,21 @@ Panel {
     barWidthProbe.running = true
   }
 
+  function resolveHelper(name) {
+    // PATH first (the ultrawide-bar installer symlinks here), then the
+    // canonical Omarchy plugin dir — no hardcoded homes.
+    var fallback = "$HOME/.config/omarchy/plugins/gdeyoung.ultrawide-bar/bin/" + name
+    return "if command -v " + name + " >/dev/null 2>&1; then " + name
+      + "; elif [[ -x " + fallback + " ]]; then " + fallback
+      + "; else echo __MISSING__; fi"
+  }
+
   function setBarWidth(value) {
     if (root.barWidthPending) return
     var pct = Math.round(Number(value))
     if (!isFinite(pct) || pct < 50 || pct > 100) pct = 100
     root.barWidthPending = true
-    barWidthSet.command = ["ultrawide-bar-width", String(pct)]
+    barWidthSet.command = ["bash", "-c", resolveHelper("ultrawide-bar-width") + " " + String(pct)]
     barWidthSet.running = true
   }
 
@@ -381,10 +390,8 @@ Panel {
 
   function refreshWindowMode() {
     if (!root.opened || windowModeProbe.running) return
-    windowModeProbe.command = [
-      "sh", "-c",
-      "if command -v ultrawide-mode >/dev/null 2>&1; then ultrawide-mode status; else exit 127; fi"
-    ]
+    windowModeProbe.command = ["bash", "-c",
+      "out=$(" + resolveHelper("ultrawide-mode") + " status); rc=$?; if [[ $rc -ne 0 || \"$out\" == *__MISSING__* ]]; then exit 127; fi; printf '%s' \"$out\""]
     windowModeProbe.running = true
   }
 
@@ -392,7 +399,7 @@ Panel {
     if (!root.windowModeAvailable || root.windowModePending !== "") return
     var choice = ["float", "tile", "off"].indexOf(value) < 0 ? "off" : value
     root.windowModePending = choice
-    windowModeSet.command = ["ultrawide-mode", choice]
+    windowModeSet.command = ["bash", "-c", resolveHelper("ultrawide-mode") + " " + choice]
     windowModeSet.running = true
   }
 
@@ -2394,7 +2401,7 @@ Panel {
               textFormat: Text.PlainText
               visible: root.windowModeKnown && !root.windowModeAvailable
               width: parent.width
-              text: "Install ultrawide-mode (~/.local/bin) to switch window modes here."
+              text: "Window mode needs the Ultrawide Bar plugin (--full install): github.com/gdeyoung/omarchy-ultrawide-bar"
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -2443,6 +2450,22 @@ Panel {
                   }
                   return ""
                 }
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                wrapMode: Text.WordWrap
+              }
+            }
+
+            Column {
+              visible: !root.ultrawideBarActive
+              width: parent.width
+              spacing: Style.space(6)
+
+              Text {
+                textFormat: Text.PlainText
+                width: parent.width
+                text: "Bar width: switch to the Ultrawide Bar to control it here — omarchy bar use gdeyoung.ultrawide-bar"
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption

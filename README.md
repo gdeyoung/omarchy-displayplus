@@ -45,6 +45,15 @@ Display+ collapses the two into one pane:
 
 </details>
 
+## Works with Ultrawide Bar
+
+When the [**Ultrawide Bar** plugin](https://github.com/gdeyoung/omarchy-ultrawide-bar)
+(gdeyoung.ultrawide-bar) is installed, Display+ drives it: a live **bar width**
+slider on the Windows tab, plus window mode (float / tile+1:1) controls and
+per-profile defaults that run on dock/undock via hyprmoncfg's profile exec.
+Neither plugin requires the other — Display+ hides those controls gracefully
+when the bar or its helper CLIs are absent.
+
 ## Install
 
 **Prerequisite — install the backend first.** Display+ is a front end: the
