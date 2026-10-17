@@ -1756,7 +1756,10 @@ Panel {
   KeyboardPanel {
     id: panel
     anchorItem: root.anchorItem
-    owner: root.barIdentity
+    owner: root  // must be an object with close() (the Panel itself);
+                 // barIdentity (the widget) makes KeyboardPanel.close()
+                 // assign open=false statically, severing the open binding
+                 // on first dismiss-overlay close — panel wedges until reload.
     bar: root.bar
     open: root.opened
     centerOnBar: false
