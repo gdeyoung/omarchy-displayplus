@@ -2177,17 +2177,19 @@ Panel {
             fontFamily: root.fontFamily
           }
 
-          UniversalScaleControl {
+          PerMonitorScaleControl {
             visible: root.compactTab === "display"
             width: parent.width
             bar: root.bar
             profile: root.draftProfile
+            editorDisplays: root.editorDocument.displays || []
             foreground: root.foreground
             dim: root.dim
             accent: Color.accent
             fontFamily: root.fontFamily
             editPending: root.editPending
             previewBusy: root.previewPending || root.previewTransaction !== ""
+            errorText: root.lastError
             onRequested: function(fieldsByKey) { root.applyUniversalScale(fieldsByKey) }
           }
 

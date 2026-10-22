@@ -553,6 +553,53 @@ function scaleOptions(editorDisplays, key, current) {
   })
 }
 
+// Front-page per-monitor scale: daemon clean-divisor stops for one output,
+// capped at 2.5 per the owner's ruling ("anything above 2.5 will never be
+// used"), with the output's CURRENT value always kept even above the cap so
+// a CLI-set scale still reads back. Returns [{ raw: "1.33333", n: 1.33333 }]
+// sorted ascending.
+function cappedScaleStops(editorDisplays, key, current) {
+  var options = scaleOptions(editorDisplays, key, current)
+  var currentRaw = formatScale(current)
+  var stops = []
+  for (var i = 0; i < options.length; i++) {
+    var raw = String(options[i].value)
+    var n = Number(raw)
+    if (!isFinite(n) || n <= 0) continue
+    if (n > 2.5 && raw !== currentRaw) continue
+    stops.push({ raw: raw, n: n })
+  }
+  var found = false
+  for (var j = 0; j < stops.length; j++) {
+    if (stops[j].raw === currentRaw) found = true
+  }
+  if (!found && currentRaw !== "" && isFinite(Number(currentRaw)) && Number(currentRaw) > 0) {
+    stops.push({ raw: currentRaw, n: Number(currentRaw) })
+  }
+  stops.sort(function(a, b) { return a.n - b.n })
+  return stops
+}
+
+// Index of the stop nearest the output's current scale (knob position).
+function nearestStopIndex(stops, current) {
+  var target = Number(formatScale(current))
+  if (!isFinite(target)) return 0
+  var best = 0
+  var bestDist = Infinity
+  for (var i = 0; i < stops.length; i++) {
+    var d = Math.abs(Number(stops[i].n) - target)
+    if (d < bestDist) { bestDist = d; best = i }
+  }
+  return best
+}
+
+// Slider readout: 2 decimals, trailing zeros trimmed — "2", "1.2", "1.33".
+function readoutScale(value) {
+  var n = Math.round(Number(value) * 100) / 100
+  if (!isFinite(n)) return ""
+  return String(parseFloat(n.toFixed(2)))
+}
+
 function mirrorOptions(profile, selectedKey) {
   var options = [{ value: "", label: "None" }]
   var outputs = profile && profile.outputs instanceof Array ? profile.outputs : []
@@ -1007,6 +1054,9 @@ if (typeof module !== "undefined") {
     modeOptions: modeOptions,
     formatScale: formatScale,
     scaleOptions: scaleOptions,
+    cappedScaleStops: cappedScaleStops,
+    nearestStopIndex: nearestStopIndex,
+    readoutScale: readoutScale,
     mirrorOptions: mirrorOptions,
     outputOptions: outputOptions,
     profileOptions: profileOptions,

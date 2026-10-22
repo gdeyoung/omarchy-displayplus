@@ -27,14 +27,18 @@ Display+ collapses the two into one pane:
 - **Brightness** — per-display, right on the front page (from hyprmoncfg)
 - **Text size** — a slider with the stock panel's curated stops (9–20px),
   applied across shell, apps, and terminals together (from the stock panel)
-- **Universal scale** — one click sets the same scale on every connected
-  display, then rides hyprmoncfg's confirm-revert dialog so a bad choice
-  undoes itself in 10 seconds
+- **Per-monitor scale** — one slider row per display, right on the front
+  page, over that display's own clean scale steps for its current mode
+  (1 · 1.2 · 1.25 · 1.33 · 1.5 · 1.6 · … capped at 2.5x). Mixed-DPI setups
+  like a 2x laptop next to 1.2x glasses just work. Right-click any slider
+  to set that scale on every display at once. Every apply rides
+  hyprmoncfg's confirm-revert dialog so a bad choice undoes itself in 10
+  seconds
 - **Identify** — every monitor card carries a numbered, color-coded badge
   (leftmost display = 1, matching Windows); the **Identify** button flashes a
   big numbered overlay on each physical screen so you can see which is which.
   Also bindable: `qs -p /usr/share/omarchy/shell ipc call hyprmoncfg identify`
-- **Per-monitor scale** stays in the expanded layout editor, where it belongs
+- Per-monitor scale also stays available in the expanded layout editor
 - Everything else hyprmoncfg does — auto profiles on hotplug/lid/resume,
   mirroring, rotation, colour management, workspace planning — unchanged
 

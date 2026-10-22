@@ -1238,3 +1238,84 @@ test("the canvas carries rank badges that agree with the identify overlay", () =
   assert.match(panel, /actionLabel: "Identify"/)
   assert.match(panel, /identifyProxy\.identifyDisplays/)
 })
+
+// ---- front-page per-monitor scale (owner: laptop stays 2x, glasses 1.2x) ---
+
+test("cappedScaleStops drops stops above 2.5 but always keeps the current value", () => {
+  const displays = [
+    {
+      key: "glasses",
+      scale_options: [1, 1.2, 1.25, 1.33333, 1.5, 1.6, 1.66667, 1.875, 2, 2.4, 2.5, 2.66667, 3, 3.33333, 3.75, 4]
+    },
+    {
+      key: "laptop",
+      scale_options: [1, 1.125, 1.2, 1.25, 1.33333, 1.5, 1.6, 1.66667, 1.8, 1.875, 2, 2.25, 2.4, 2.5, 2.66667, 3, 3.33333, 3.6, 3.75, 4]
+    }
+  ]
+  const glasses = Model.cappedScaleStops(displays, "glasses", 1.2)
+  assert.deepEqual(glasses.map(s => s.raw),
+    ["1", "1.2", "1.25", "1.33333", "1.5", "1.6", "1.66667", "1.875", "2", "2.4", "2.5"])
+  const laptop = Model.cappedScaleStops(displays, "laptop", 2)
+  assert.equal(laptop[laptop.length - 1].raw, "2.5")
+  assert.ok(!laptop.some(s => s.n > 2.5))
+
+  // A CLI-set 3x current value survives the cap so the readout never blanks.
+  const cli = Model.cappedScaleStops(displays, "glasses", 3)
+  assert.ok(cli.some(s => s.raw === "3"), "current 3x must be kept")
+  assert.equal(cli.filter(s => s.n > 2.5).length, 1, "only the current value exceeds the cap")
+
+  // A current value the daemon list lacks is merged in (sorted).
+  const merged = Model.cappedScaleStops(displays, "glasses", 1.4)
+  assert.ok(merged.some(s => s.raw === "1.4"))
+  const idx14 = merged.findIndex(s => s.raw === "1.4")
+  const idx125 = merged.findIndex(s => s.raw === "1.25")
+  assert.ok(idx125 < idx14)
+})
+
+test("nearestStopIndex parks the knob on the closest stop", () => {
+  const stops = Model.cappedScaleStops([{ key: "k", scale_options: [1, 1.2, 1.5, 2] }], "k", 2)
+  assert.equal(Model.nearestStopIndex(stops, 2), 3)
+  assert.equal(Model.nearestStopIndex(stops, 1.4), 2) // 1.4 snaps between 1.2/1.5
+  assert.equal(Model.nearestStopIndex(stops, undefined), 0)
+})
+
+test("readoutScale trims to 2 decimals without trailing zeros", () => {
+  assert.equal(Model.readoutScale(2), "2")
+  assert.equal(Model.readoutScale(1.2), "1.2")
+  assert.equal(Model.readoutScale(1.33333), "1.33")
+  assert.equal(Model.readoutScale(1.66667), "1.67")
+  assert.equal(Model.readoutScale("nope"), "")
+})
+
+test("the front page wires PerMonitorScaleControl into the draft pipeline", () => {
+  const panel = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+  assert.match(panel, /PerMonitorScaleControl \{/)
+  assert.doesNotMatch(panel, /UniversalScaleControl/)
+  assert.match(panel, /editorDisplays: root\.editorDocument\.displays \|\| \[\]/)
+  assert.match(panel, /errorText: root\.lastError/)
+  assert.match(panel, /onRequested: function\(fieldsByKey\) \{ root\.applyUniversalScale\(fieldsByKey\) \}/)
+  assert.ok(!fs.existsSync(path.join(__dirname, "..", "UniversalScaleControl.qml")),
+    "UniversalScaleControl.qml must be deleted with the swap")
+})
+
+test("PerMonitorScaleControl: release applies one display, right-click unifies, wheel debounces", () => {
+  const qml = fs.readFileSync(path.join(__dirname, "..", "PerMonitorScaleControl.qml"), "utf8")
+  // Signal contract unchanged from UniversalScaleControl.
+  assert.match(qml, /signal requested\(var fieldsByKey\)/)
+  // One display per gesture.
+  assert.match(qml, /function applyOne\(key, raw\)/)
+  assert.match(qml, /onReleased: function\(v\) \{/)
+  assert.match(qml, /root\.applyOne\(rowSurface\.modelData\.key, stop\.raw\)/)
+  // Right-click = that scale on every enabled display.
+  assert.match(qml, /onRightClicked: root\.applyAll\(rowSurface\.modelData\.scale\)/)
+  // Wheel debounce: released without a drag defers through the Timer.
+  assert.match(qml, /wheelDebounce\.restart\(\)/)
+  assert.match(qml, /root\.applyOne\(root\.wheelKey, root\.wheelRaw\)/)
+  // Stop logic lives in Model (node-tested), not inline QML.
+  assert.match(qml, /Model\.cappedScaleStops\(/)
+  assert.doesNotMatch(qml, /if \(n > 2\.5/)
+  // Badge + off-row states per spec.
+  assert.match(qml, /Model\.displayColor\(rowSurface\.modelData\.number\)/)
+  assert.match(qml, /" · off"/)
+  assert.match(qml, /"No clean scale steps for this mode"/)
+})

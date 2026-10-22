@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "gdeyoung.hyprmoncfg",
   "name": "Display+",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "author": "Greg DeYoung",
   "license": "MIT",
   "description": "Fork: single-pane display control \u2014 brightness, text size, universal scale on the front panel; full hyprmoncfg layout editor underneath.",
