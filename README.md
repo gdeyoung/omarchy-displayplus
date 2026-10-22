@@ -11,7 +11,7 @@ multi-monitor layout editor underneath.
 Synthetic mockups — no real hardware identifiers. The expanded layout editor and confirm-revert guard:
 
 ![Expanded layout editor](docs/panel-editor.png)
-![Universal scale, guarded](docs/panel-guard.png)
+![Per-monitor scale, guarded](docs/panel-guard.png)
 
 ## The problem
 

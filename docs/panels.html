@@ -66,6 +66,17 @@
   .stops { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--dim); margin-top: 6px; }
   .hint { font-size: 10.5px; color: var(--muted); margin-top: 6px; }
   .scalebtns { display: flex; gap: 8px; margin-top: 4px; }
+  .scalerow { display: flex; align-items: center; gap: 8px; margin-top: 8px;
+    border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; }
+  .scalerow .badge { width: 17px; height: 17px; border-radius: 6px; flex: 0 0 17px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #1b1d2b; }
+  .scalerow .conn { font-size: 11px; color: var(--muted); flex: 0 0 74px; }
+  .scalerow .track { flex: 1; }
+  .scalerow .val { font-size: 11px; font-weight: 700; color: var(--muted);
+    flex: 0 0 34px; text-align: right; }
+  .ticks { display: flex; justify-content: space-between; margin-top: 4px; }
+  .ticks i { width: 1px; height: 4px; background: rgba(255,255,255,.22); }
   .sbtn {
     flex: 1; text-align: center; font-size: 12px; color: var(--muted);
     border: 1px solid var(--border); border-radius: 9px; padding: 8px 0;
@@ -165,14 +176,26 @@
       <div class="hint">Shell, apps, and terminals together</div>
     </div>
 
-    <div class="sec">UNIVERSAL SCALE · ALL DISPLAYS</div>
-    <div class="scalebtns">
-      <div class="sbtn">1x</div>
-      <div class="sbtn on">1.25x</div>
-      <div class="sbtn">1.5x</div>
-      <div class="sbtn">2x</div>
+    <div class="sec">SCALE · 2 DISPLAYS <span style="float:right;color:var(--muted);font-weight:700;">Mixed</span></div>
+    <div class="scalerow">
+      <div class="badge" style="background:#89b4fa;">1</div>
+      <div class="conn">eDP-1</div>
+      <div class="track">
+        <div class="slider"><i style="width:86%;"></i><span class="knob" style="left:calc(86% - 7px);"></span></div>
+        <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="val">2x</div>
     </div>
-    <div class="note">applies to every connected display · confirm-revert guarded</div>
+    <div class="scalerow">
+      <div class="badge" style="background:#a6e3a1;">2</div>
+      <div class="conn">DP-1</div>
+      <div class="track">
+        <div class="slider"><i style="width:23%;"></i><span class="knob" style="left:calc(23% - 7px);"></span></div>
+        <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="val">1.2x</div>
+    </div>
+    <div class="note">per display · right-click a slider to set every display</div>
   </div>
 </div>
 </div>
@@ -230,10 +253,10 @@
 
 <!-- ============ PANEL 3: CONFIRM-REVERT GUARD ============ -->
 <div>
-<div class="caption">3 · Universal scale, guarded</div>
+<div class="caption">3 · Scale changes, guarded</div>
 <div class="guard" id="panel-guard">
   <div class="q">Keep this layout?</div>
-  <div class="desc">Universal scale 1.25x applied to all displays. If anything
+  <div class="desc">Scale 1.2x applied to one display. If anything
   looks wrong, it reverts by itself.</div>
   <div class="ring">
     <svg width="92" height="92" viewBox="0 0 92 92">
