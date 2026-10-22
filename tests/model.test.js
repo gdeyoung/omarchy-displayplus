@@ -1319,3 +1319,10 @@ test("PerMonitorScaleControl: release applies one display, right-click unifies, 
   assert.match(qml, /" · off"/)
   assert.match(qml, /"No clean scale steps for this mode"/)
 })
+
+test("PerMonitorScaleControl imports what it references (missing-import renders zero rows)", () => {
+  const qml = fs.readFileSync(path.join(__dirname, "..", "PerMonitorScaleControl.qml"), "utf8")
+  assert.match(qml, /import "Model\.js" as Model/, "Model.* calls need the Model.js import")
+  // qs.Commons is imported unqualified — qualified Commons.* refs are unresolved.
+  assert.doesNotMatch(qml, /Commons\./)
+})

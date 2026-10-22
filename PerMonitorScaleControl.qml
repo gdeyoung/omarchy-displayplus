@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Commons
 import qs.Ui
+import "Model.js" as Model
 
 // Per-monitor scale rows for the display panel's front page (design/
 // per-monitor-scale-spec.md). Each output gets its own slider over the
@@ -205,7 +206,7 @@ Column {
     textFormat: Text.PlainText
     width: parent.width
     text: root.captionText()
-    color: root.errorText !== "" ? Commons.Color.urgent : root.dim
+    color: root.errorText !== "" ? Color.urgent : root.dim
     font.family: root.fontFamily
     font.pixelSize: Style.font.caption
     elide: Text.ElideRight
@@ -259,7 +260,7 @@ Column {
               anchors.centerIn: parent
               textFormat: Text.PlainText
               text: String(rowSurface.modelData.number)
-              color: Commons.Color.background
+              color: Color.background
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
               font.bold: true
